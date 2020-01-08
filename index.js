@@ -15,7 +15,7 @@ module.exports = (incomingOptions) => {
           softDelete: true,
         });
         const patch = {};
-        patch[options.columnName] = options.deletedValue;
+        patch[options.columnName] = typeof options.deletedValue === 'function' ? options.deletedValue() : options.deletedValue;
         return this.patch(patch);
       }
 
@@ -30,7 +30,7 @@ module.exports = (incomingOptions) => {
           undelete: true,
         });
         const patch = {};
-        patch[options.columnName] = options.notDeletedValue;
+        patch[options.columnName] = typeof options.notDeletedValue === 'function' ? options.notDeletedValue() : options.notDeletedValue;
         return this.patch(patch);
       }
 
@@ -39,13 +39,13 @@ module.exports = (incomingOptions) => {
         // this if is for backwards compatibility, to protect those that used a nullable `deleted` field
         if (options.deletedValue === true) { return this.where(`${this.modelClass().tableName}.${options.columnName}`, options.deletedValue); }
         // qualify the column name
-        return this.whereNot(`${this.modelClass().tableName}.${options.columnName}`, options.notDeletedValue);
+        return this.whereNot(`${this.modelClass().tableName}.${options.columnName}`, typeof options.notDeletedValue === 'function' ? options.notDeletedValue() : options.notDeletedValue);
       }
 
       // provide a way to filter out deleted records without having to remember the column name
       whereNotDeleted() {
         // qualify the column name
-        return this.where(`${this.modelClass().tableName}.${options.columnName}`, options.notDeletedValue);
+        return this.where(`${this.modelClass().tableName}.${options.columnName}`, typeof options.notDeletedValue === 'function' ? options.notDeletedValue() : options.notDeletedValue);
       }
     }
     return class extends Model {
