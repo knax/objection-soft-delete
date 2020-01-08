@@ -259,6 +259,74 @@ describe('Soft Delete plugin tests', () => {
           });
       });
     });
+
+    describe('when deletedValue and nonDeletedValue are overridden with function', () => {
+      before(() => { return createDeletedAtColumn(knex); });
+      after(() => { return removeDeletedAtColumn(knex); });
+
+      it('should set the "deleted" column to the set value', () => {
+        const now = new Date();
+        const TestObject = getModel({
+          columnName: 'deleted_at',
+          deletedValue: () => {
+            return now.toISOString();
+          },
+          notDeletedValue: () => {
+            return null;
+          },
+        });
+
+        return TestObject.query(knex)
+          .where('id', 1)
+          .del()
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first();
+          })
+          .then((result) => {
+            const deletedAt = new Date(result.deleted_at).toISOString();
+            expect(deletedAt).to.be.equal(now.toISOString(), 'row marked deleted');
+          })
+          .then(() => {
+            return TestObject.query(knex)
+              .whereDeleted()
+              .first();
+          })
+          .then((result) => {
+            const deletedAt = new Date(result.deleted_at).toISOString();
+            expect(deletedAt).to.be.equal(now.toISOString(), 'row marked deleted');
+          })
+          .then(() => {
+            const query = TestObject.query(knex)
+              .where('id', 1)
+              .undelete();
+            return TestObject.query(knex)
+              .where('id', 1)
+              .undelete();
+          })
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first();
+          })
+          .then((result) => {
+            expect(result.deleted_at).to.be.equal(null, 'row not marked deleted');
+          })
+          .then(() => {
+            return TestObject.query(knex)
+              .whereNotDeleted();
+          })
+          .then(() => {
+            return TestObject.query(knex)
+              .where('id', 1)
+              .first();
+          })
+          .then((result) => {
+            expect(result.deleted_at).to.be.equal(null, 'row not marked deleted');
+          });
+      });
+    });
   });
 
   describe('.hardDelete()', () => {
